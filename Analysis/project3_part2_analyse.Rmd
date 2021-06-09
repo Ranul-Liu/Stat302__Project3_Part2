@@ -1,0 +1,65 @@
+---
+title: "project3_part2_analyse"
+author: "Yichen Liu"
+date: "2021/6/9"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Include necessary packages, data and codes
+
+```{r, warning = FALSE, message = FALSE }
+library(dplyr)
+library(ggplot2)
+source("../Code/my_rf_cv.R")
+my_penguins <- read.csv("../Data/my_penguins.csv")
+my_gapminder <- read.csv("../Data/my_gapminder.csv")
+```
+
+## Analyse and plot
+
+```{r}
+train <- na.omit(my_penguins) %>% select(body_mass_g, bill_length_mm,
+                                                bill_depth_mm,
+                                                flipper_length_mm)
+MSEs <- 1: 90
+dim(MSEs) <- c(3, 30)
+for (i in 1: 30) {
+  MSEs[1, i] <- my_rf_cv(train, 2)
+}
+for (i in 1: 30) {
+  MSEs[2, i] <- my_rf_cv(train, 5)
+}
+for (i in 1: 30) {
+  MSEs[3, i] <- my_rf_cv(train, 10)
+}
+row.names(MSEs) <- c("cv = 2", "cv = 5", "cv = 10")
+
+simulate_results <- cbind(MSEs[1,], MSEs[2,], MSEs[3,])
+colnames(simulate_results) <- c("cv = 2", "cv = 5", "cv = 10")
+write.csv(simulate_results, file = "../Output/Results/simulate_results.csv")
+MSE_df2 <- data.frame("MSE" <- MSEs[1,], "cv" = "cv = 2")
+colnames(MSE_df2) <- c("MSE", "cv")
+MSE_df5 <- data.frame("MSE" <- MSEs[2,], "cv" = "cv = 5")
+colnames(MSE_df5) <- c("MSE", "cv")
+MSE_df10 <- data.frame("MSE" <- MSEs[3,], "cv" = "cv = 10")
+colnames(MSE_df10) <- c("MSE", "cv")
+MSE_df <- rbind(MSE_df2, MSE_df5, MSE_df10)
+graph <- ggplot(data = MSE_df) +
+           geom_boxplot(aes(x = cv, y = MSE)) +
+           labs(title = "Boxplot of different CV VS. MSE")
+ggsave("../Output/Figures/figure.jpg", plot = graph)
+stat_table <- 1: 6
+dim(stat_table) <- c(3, 2)
+for (i in 1: 3) {
+  stat_table[i, 1] <- mean(MSEs[i,])
+  stat_table[i, 2] <- sd(MSEs[i,])
+}
+row.names(stat_table) <- c("cv = 2", "cv = 5", "cv = 10")
+colnames(stat_table) <- c("mean", "standard deviation")
+stat_table <- as.table(stat_table)
+saveRDS(stat_table, file = "../Output/Results/stat_table.rds")
+```
